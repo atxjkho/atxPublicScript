@@ -25,13 +25,13 @@ function throwError([string] $msg)
 	catch 
 	{
 		$stack = $_.ScriptStackTrace
-		traceLog "DMDTTP is failed: $msg`nStack:`n$stack"
+		Trace-Log "DMDTTP is failed: $msg`nStack:`n$stack"
 	}
 
 	throw $msg
 }
 
-function traceLog([string] $msg)
+function Trace-Log([string] $msg)
 {
     $now = nowValue
     try
@@ -78,7 +78,7 @@ function runProcess([string] $process, [string] $arguments)
 		throwError "Failed to run process: exitCode=$($proc.ExitCode), errVariable=$errVariable, errContent=$errContent, outContent=$outContent."
 	}
 
-	traceLog "runProcess: ExitCode=$($proc.ExitCode), output=$outContent"
+	Trace-Log "runProcess: ExitCode=$($proc.ExitCode), output=$outContent"
 
 	if ([string]::IsNullOrEmpty($outContent))
 	{
@@ -96,12 +96,12 @@ function downloadGateway([string] $url, [string] $gwPath)
         $ErrorActionPreference = "Stop";
         $client = New-Object System.Net.WebClient
         $client.DownloadFile($url, $gwPath)
-        traceLog "Download gateway successfully. Gateway loc: $gwPath"
+        Trace-Log "Download gateway successfully. Gateway loc: $gwPath"
     }
     catch
     {
-        traceLog "Fail to download gateway msi"
-        traceLog $_.Exception.ToString()
+        Trace-Log "Fail to download gateway msi"
+        Trace-Log $_.Exception.ToString()
         throw
     }
 }
@@ -118,26 +118,26 @@ function installGateway([string] $gwPath)
 		throwError "Invalid gateway path: $gwPath"
 	}
 	
-	traceLog "Start Gateway installation"
+	Trace-Log "Start Gateway installation"
 	runProcess "msiexec.exe" "/i gateway.msi INSTALLTYPE=AzureTemplate /quiet /norestart"		
 	
 	Start-Sleep -Seconds 30	
 
-	traceLog "Installation of gateway is successful"
+	Trace-Log "Installation of gateway is successful"
 }
 
-function getRegistryProperty([string] $keyPath, [string] $property)
+function Get-RegistryProperty([string] $keyPath, [string] $property)
 {
-	traceLog "getRegistryProperty: Get $property from $keyPath"
+	Trace-Log "Get-RegistryProperty: Get $property from $keyPath"
 	if (! (Test-Path $keyPath))
 	{
-		traceLog "getRegistryProperty: $keyPath does not exist"
+		Trace-Log "Get-RegistryProperty: $keyPath does not exist"
 	}
 
 	$keyReg = Get-Item $keyPath
 	if (! ($keyReg.Property -contains $property))
 	{
-		traceLog "getRegistryProperty: $property does not exist"
+		Trace-Log "Get-RegistryProperty: $property does not exist"
 		return ""
 	}
 
@@ -146,32 +146,32 @@ function getRegistryProperty([string] $keyPath, [string] $property)
 
 function Get-InstalledFilePath()
 {
-	$filePath = getRegistryProperty "hklm:\Software\Microsoft\DataTransfer\DataManagementGateway\ConfigurationManager" "DiacmdPath"
+	$filePath = Get-RegistryProperty "hklm:\Software\Microsoft\DataTransfer\DataManagementGateway\ConfigurationManager" "DiacmdPath"
 	if ([string]::IsNullOrEmpty($filePath))
 	{
 		throwError "Get-InstalledFilePath: Cannot find installed File Path"
 	}
-    traceLog "Gateway installation file: $filePath"
+    Trace-Log "Gateway installation file: $filePath"
 
 	return $filePath
 }
 
 function registerGateway([string] $instanceKey)
 {
-    traceLog "Register Agent"
+    Trace-Log "Register Agent"
 	$filePath = Get-InstalledFilePath
 	runProcess $filePath "-era 8060"
 	runProcess $filePath "-k $instanceKey"
-    traceLog "Agent registration is successful!"
+    Trace-Log "Agent registration is successful!"
 }
 
 
 
-traceLog "Log file: $logLoc"
+Trace-Log "Log file: $logLoc"
 $uri = "https://go.microsoft.com/fwlink/?linkid=839822"
-traceLog "Gateway download fw link: $uri"
+Trace-Log "Gateway download fw link: $uri"
 $gwPath= "$PWD\gateway.msi"
-traceLog "Gateway download location: $gwPath"
+Trace-Log "Gateway download location: $gwPath"
 
 
 downloadGateway $uri $gwPath
